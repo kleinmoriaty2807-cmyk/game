@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Poke Survivor — Fan Game</title>
+<style>
+:root{--bg:#101b22;--panel:#172a32;--line:#38545b;--gold:#ffd166;--mint:#8ff0b5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#244b43,#101b22 65%);color:#f4f7e9;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;justify-content:center;min-height:100vh;padding:14px}
+.wrap{width:min(100%,1000px)}header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}h1{font-size:clamp(20px,4vw,30px);margin:0;color:var(--gold);letter-spacing:.5px;text-shadow:2px 3px #593b27}.tag{font-size:12px;color:#c9e7d4;border:1px solid #4c7770;border-radius:99px;padding:5px 10px}
+.gamebox{position:relative;border:3px solid #42685d;border-radius:14px;overflow:hidden;box-shadow:0 18px 60px #0008;background:#18392d}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:none}
+.hud{position:absolute;left:10px;right:10px;top:9px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;pointer-events:none;flex-wrap:wrap}.stat{background:#0d1d1bd9;border:1px solid #60887b;border-radius:9px;padding:7px 10px;font-size:12px;box-shadow:0 2px #0003}.stat b{color:var(--gold)}.xpwrap{position:absolute;bottom:0;left:0;right:0;height:8px;background:#152326}.xpbar{height:100%;width:0;background:linear-gradient(90deg,#6ce6c2,#e5ff8c);transition:width .15s}
+.overlay{position:absolute;inset:0;background:#071514bd;display:flex;align-items:center;justify-content:center;padding:16px}.panel{width:min(550px,100%);background:linear-gradient(150deg,#24443c,#14272b);border:2px solid #7aab83;border-radius:16px;padding:22px;text-align:center;box-shadow:0 12px 35px #0008}.panel h2{margin:0 0 8px;color:var(--gold);font-size:clamp(22px,4vw,32px)}.panel p{line-height:1.5;color:#e0f1e4}.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800;background:var(--gold);color:#362617;cursor:pointer;box-shadow:0 4px #a36b37;transition:transform .1s}.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(2px);box-shadow:0 1px #a36b37}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.choice{background:#1d3834;border:1px solid #709c84;color:#f6ffe9;border-radius:12px;padding:14px 9px;cursor:pointer;text-align:center;min-height:125px}.choice:hover{background:#31564a;border-color:var(--gold)}.choice .emoji{font-size:30px;display:block;margin-bottom:7px}.choice b{display:block;color:#ffe28a;margin-bottom:5px}.choice small{color:#d4e9d8;line-height:1.35}.hidden{display:none!important}.foot{color:#b9d0c6;font-size:12px;line-height:1.5;margin:10px 2px}.mobile{display:none;position:absolute;bottom:22px;left:12px;right:12px;justify-content:space-between;pointer-events:none}.dpad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,38px);gap:4px;pointer-events:auto}.dpad button,.dash{background:#142822bb;border:1px solid #8eb9a0;color:white;border-radius:9px;font-size:18px;touch-action:none}.dash{pointer-events:auto;align-self:end;padding:15px;font-size:13px;font-weight:bold}
+ 
+.skillbook{margin-top:10px;background:#142a28;border:1px solid #42685d;border-radius:12px;padding:12px}
+.skillbook-head{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#ffe08a;font-size:13px;margin-bottom:10px}
+.skillbook-head span{font-size:11px;color:#b9d0c6;font-weight:500}
+.skill-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.skill-slot{aspect-ratio:1/1;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:1px solid #46665b;border-radius:9px;background:linear-gradient(145deg,#203b35,#142521);padding:5px;color:#eaf5df}
+.skill-slot.support{border-color:#6e9b70}
+.skill-slot .slot-icon{font-size:clamp(18px,3vw,27px);line-height:1.1}
+.skill-slot .slot-name{font-size:clamp(8px,1.2vw,11px);font-weight:700;margin-top:5px;line-height:1.1;overflow-wrap:anywhere}
+.skill-slot .slot-level{font-size:10px;color:#ffe08a;margin-top:4px}
+.skill-slot .slot-empty{color:#668078;font-size:10px;margin-top:3px}
+.skill-slot.maxed{background:linear-gradient(145deg,#594b2a,#332d20);border-color:#ffd166}
+.skill-slot.maxed:after{content:"MAX";position:absolute;top:3px;right:4px;font-size:8px;font-weight:900;color:#ffe08a}
+.skill-category{display:inline-block;font-size:9px;line-height:1.25;margin-top:4px;padding:2px 5px;border-radius:5px;background:#203f38;color:#bcebd0;border:1px solid #4d7c68}
+.skill-category.both{color:#ffe08a;border-color:#9c8247;background:#443b24}
+.skill-category.player{color:#bce4ff;border-color:#507d9b;background:#203543}
+.choice-category{display:block;font-size:10px;font-weight:700;opacity:.9;margin:2px 0 4px;color:#bcebd0}
+.choice-category.both{color:#ffe08a}
+.choice-category.player{color:#bce4ff}
+.skill-note{font-size:11px;color:#b9d0c6;margin:9px 2px 0;line-height:1.4}
+@media(max-width:600px){.skillbook{padding:8px}.skill-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.skillbook-head{font-size:12px}.skill-slot .slot-name{font-size:10px}}
+\n@media(max-width:600px){body{padding:7px}.stat{font-size:10px;padding:5px 7px}.mobile{display:flex}.panel{padding:16px}.choices{grid-template-columns:1fr}.choice{min-height:0;display:flex;align-items:center;gap:10px;text-align:left;padding:10px}.choice .emoji{margin:0;font-size:26px}.choice small{font-size:11px}.choice b{margin-bottom:3px}}
+</style>
+</head>
+<body><main class="wrap">
+<header><h1>⚡ POKE SURVIVOR</h1><span class="tag">FAN GAME • BẢN DEMO</span></header>
+<div class="gamebox"><canvas id="game" width="900" height="560" aria-label="Khu vực chơi game"></canvas>
+<div class="hud"><div class="stat">❤️ HP <b id="hp">100/100</b><br>⭐ Cấp <b id="lv">1</b> · Hạ <b id="kills">0</b></div><div class="stat">⏱ <b id="time">00:00</b><br>💎 XP <b id="xp">0/5</b></div></div>
+<div class="xpwrap"><div class="xpbar" id="xpbar"></div></div>
+<div class="mobile" id="mobile"><div class="dpad"><span></span><button data-dir="up">▲</button><span></span><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><button class="dash" id="dash">LƯỚT ✦</button></div>
+<div class="overlay" id="start"><div class="panel"><h2>Cuộc phiêu lưu bắt đầu!</h2><p>Đi nhặt tinh thể kinh nghiệm, sống sót trước đàn quái và lên cấp để chọn kỹ năng mới. Pokémon của bạn sẽ tự động tấn công kẻ địch gần nhất.</p><p><b>Máy tính:</b> WASD / phím mũi tên để di chuyển, Space để lướt.<br><b>Điện thoại:</b> dùng cụm phím ở góc dưới.</p><button class="btn" id="startBtn">BẮT ĐẦU CHƠI</button></div></div>
+<div class="overlay hidden" id="levelup"><div class="panel"><h2>✨ LÊN CẤP!</h2><p>Chọn một kỹ năng để tiến hóa sức mạnh.</p><div class="choices" id="choices"></div></div></div>
+<div class="overlay hidden" id="gameover"><div class="panel"><h2>Hết lượt rồi!</h2><p id="result"></p><button class="btn" id="restart">CHƠI LẠI</button></div></div>
+</div>
+<p class="foot">Bản đồ cuộn vô tận: camera luôn bám theo nhân vật, địa hình sinh tự động theo tọa độ thế giới và bạn có thể đi mãi theo mọi hướng. Mục tiêu: nhặt XP, né quái và sống sót càng lâu càng tốt.</p>
+</main>
+<script>
+(()=>{
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=c.width,H=c.height, TILE=38, WORLD_SEED=7919;
+let state='menu',last=0,elapsed=0,spawn=0,attackTimer=0,orbTimer=0,thunderstormTimer=0,lightningTimer=0,level=1,xp=0,xpNeed=5,kills=0,currentWave=-1,lastEventMinute=-1;
+let player, enemies=[],gems=[],shots=[],particles=[],strikes=[],keys={},touchDirs={},skill={power:1,rate:1,range:1,speed:1,magnet:1,xpGain:1,hp:100,maxHp:100,orb:0,lightningLevel:0};
+const types=[
+ {id:'rate',name:'Tốc độ bắn',emoji:'⚡',desc:'Giảm thời gian giữa các phát bắn từ 3 giây xuống 0,65 giây ở cấp 6.',support:true,category:'both',level:0,max:6,apply:()=>skill.rate*=Math.pow(3/0.65,1/6)},
+ {id:'magnet',name:'Tầm hút XP',emoji:'🧲',desc:'Tăng tầm hút kinh nghiệm 18%.',support:true,category:'player',level:0,max:6,apply:()=>skill.magnet*=1.18},
+ {id:'power',name:'Sát thương',emoji:'💥',desc:'Tăng sát thương 15%.',support:true,category:'both',level:0,max:6,apply:()=>skill.power*=1.15},
+ {id:'xp',name:'Thêm kinh nghiệm',emoji:'💎',desc:'Nhận nhiều XP hơn 15%.',support:true,category:'player',level:0,max:6,apply:()=>skill.xpGain*=1.15},
+ {id:'speed',name:'Tốc độ chạy',emoji:'💨',desc:'Tăng tốc độ chạy 10%.',support:true,category:'player',level:0,max:6,apply:()=>skill.speed*=1.10},
+ {id:'health',name:'Tăng máu',emoji:'💖',desc:'Tăng 20 HP tối đa và hồi 20 HP.',support:true,category:'player',level:0,max:6,apply:()=>{skill.maxHp+=20;player.hp=Math.min(skill.maxHp,player.hp+20)}},
+ {id:'lightning',name:'Thiên lôi Pikachu',emoji:'🌩️',desc:'Tối đa 6 mục tiêu trong phạm vi 12 ô. Hồi chiêu cấp 1: 6 giây, giảm 0,5 giây mỗi cấp (tối thiểu 3 giây).',support:false,level:0,max:6,apply:()=>{}},
+ {id:'orbs',name:'Cầu năng lượng đa sắc',emoji:'🔴',desc:'Bắn 1–6 cầu vào mục tiêu gần nhất; tầm bắn 11,4 ô, hồi chiêu 1,65 giây giảm 0,12 giây mỗi cấp (tối thiểu 0,72 giây). Cầu nổ lan trong bán kính 1 ô.',support:false,level:0,max:6,apply:()=>{}},
+ {id:'thunderstorm',name:'Thunderbolt — Sét Đánh Mục Tiêu',emoji:'🌩️',desc:'Giáng sét xuống quái gần nhất; vùng sát thương tính theo ô nhưng không hiện vòng/vùng màu xanh. Lv1 1×1 ô đến Lv6 6×6 ô; hồi chiêu 6–3 giây.',support:false,category:'combat',level:0,max:6,apply:()=>{}},
+ {id:'reserved9',name:'Đang phát triển',emoji:'🔒',desc:'Kỹ năng sẽ được bổ sung sau.',support:false,level:0,max:0,locked:true,apply:()=>{}},
+ {id:'reserved10',name:'Đang phát triển',emoji:'🔒',desc:'Kỹ năng sẽ được bổ sung sau.',support:false,level:0,max:0,locked:true,apply:()=>{}},
+ {id:'reserved11',name:'Đang phát triển',emoji:'🔒',desc:'Kỹ năng sẽ được bổ sung sau.',support:false,level:0,max:0,locked:true,apply:()=>{}},
+ {id:'reserved12',name:'Đang phát triển',emoji:'🔒',desc:'Kỹ năng sẽ được bổ sung sau.',support:false,level:0,max:0,locked:true,apply:()=>{}}
+];
+function reset(){types.forEach(t=>t.level=0);elapsed=0;spawn=0;attackTimer=0;orbTimer=0;thunderstormTimer=0;lightningTimer=0;currentWave=-1;lastEventMinute=-1;level=1;xp=0;xpNeed=5;kills=0;enemies=[];gems=[];shots=[];particles=[];strikes=[];skill={power:1,rate:1,range:1,speed:1,magnet:1,xpGain:1,hp:100,maxHp:100,orb:0,lightningLevel:0};player={x:W/2,y:H/2,hp:100,inv:0,face:1,dash:0};updateHUD()}
+function start(){reset();state='play';$('start').classList.add('hidden');$('gameover').classList.add('hidden');$('levelup').classList.add('hidden');last=performance.now();requestAnimationFrame(loop)}
+function spawnEnemy(forceBoss=false, ringAngle=null){
+ if(!player||enemies.length>=250)return;
+ const camX=player.x-W/2,camY=player.y-H/2;
+ let x,y;
+ if(ringAngle!==null){const a=ringAngle,dist=Math.max(W,H)*.58;x=player.x+Math.cos(a)*dist;y=player.y+Math.sin(a)*dist;}
+ else { // chọn một trong bốn cạnh ngoài khung camera, tránh spawn trước mắt
+   const pad=45,side=Math.floor(Math.random()*4);
+   if(side===0){x=camX-pad;y=camY+Math.random()*(H+2*pad)}
+   else if(side===1){x=camX+W+pad;y=camY+Math.random()*(H+2*pad)}
+   else if(side===2){x=camX+Math.random()*W;y=camY-pad}
+   else{x=camX+Math.random()*W;y=camY+H+pad}
+ }
+ const minute=Math.floor(elapsed/60),boss=forceBoss;
+ const hpScale=1+minute*.28,baseHp=boss?24:(Math.random()<Math.min(.32,elapsed/250)?4:2);
+ const hp=Math.max(1,baseHp*hpScale);
+ const big=boss||baseHp>=4;
+ const speed=(boss?24:big?27:38)+Math.random()*17+Math.min(18,minute*.45);
+ enemies.push({x,y,hp,max:hp,speed,emoji:boss?'👹':big?'👾':['🐛','🦇','🟣','🐌'][Math.floor(Math.random()*4)],r:boss?25:big?19:14,hit:0,boss});
+}
+function nearest(){let n=null,d=1e9;for(const e of enemies){let q=Math.hypot(e.x-player.x,e.y-player.y);if(q<d){d=q;n=e}}return n}
+function visibleTarget(){
+ const camX=player.x-W/2, camY=player.y-H/2;
+ let target=null,best=Infinity;
+ for(const e of enemies){
+   const sx=e.x-camX,sy=e.y-camY;
+   // Chỉ tự bắn đạn cơ bản khi quái đang nằm trong khung hình.
+   if(sx< -e.r||sx>W+e.r||sy< -e.r||sy>H+e.r)continue;
+   const d=Math.hypot(e.x-player.x,e.y-player.y);
+   if(d<best){best=d;target=e}
+ }
+ return target;
+}
+function fireAt(target,{maxRange=Infinity,skillShot=false}={}){
+ if(!target)return;
+ const dx=target.x-player.x,dy=target.y-player.y,d=Math.hypot(dx,dy)||1;
+ if(d>maxRange)return;
+ const shotSpeed=skillShot?470:390;
+ shots.push({x:player.x,y:player.y,vx:dx/d*shotSpeed,vy:dy/d*shotSpeed,life:Math.max(.12,Math.min(d,maxRange)/shotSpeed),maxLife:Math.max(.12,Math.min(d,maxRange)/shotSpeed),damage:skill.power*(skillShot?1.35:1),lightning:true,skillShot,travelled:0,maxDistance:Math.min(d+30,maxRange),seed:Math.random()*1000});
+}
+function shoot(){
+ // Đòn cơ bản: tự động bắn đạn tia điện vào quái đang hiện trên màn hình.
+ const target=visibleTarget();
+ if(target)fireAt(target);
+
+}
+// XP cần để lên cấp tiếp theo: tăng theo từng mốc cấp độ (Tiered Linear Scaling).
+// level là cấp hiện tại: cấp 1 cần 5 XP, cấp 2 cần 15 XP...
+function xpRequiredForLevel(level){
+  if(level <= 1) return 5;
+  if(level <= 20) return 5 + (level - 1) * 10;       // Cấp 1–20: +10 XP mỗi cấp
+  if(level <= 40) return 195 + (level - 20) * 13;    // Cấp 21–40: +13 XP mỗi cấp
+  return 455 + (level - 40) * 16;                    // Cấp 41 trở đi: +16 XP mỗi cấp
+}
+function gain(n){
+  xp += Math.max(1, Math.round(n * skill.xpGain));
+  while(xp >= xpNeed){
+    xp -= xpNeed;
+    level++;
+    xpNeed = xpRequiredForLevel(level);
+    levelPause();
+    // Dừng tại đây để người chơi chọn kỹ năng trước khi xử lý lần lên cấp kế tiếp.
+    if(state === 'level') return;
+  }
+}
+function categoryLabel(s){if(s.category==='both')return 'Người chơi + chiến đấu';if(s.category==='player')return 'Chỉ người chơi';if(!s.support&&!s.locked)return 'Kỹ năng chiến đấu';return 'Đang phát triển'}
+function levelPause(){state='level';$('levelup').classList.remove('hidden');const box=$('choices');box.innerHTML='';let available=types.filter(t=>!t.locked&&t.level<t.max);let pool=[...available].sort(()=>Math.random()-.5).slice(0,3);if(!pool.length){state='play';$('levelup').classList.add('hidden');return}for(const s of pool){let b=document.createElement('button');b.className='choice';const catClass=s.category||'combat';b.innerHTML=`<span class="emoji">${s.emoji}</span><span><b>${s.name} · cấp ${s.level+1}/${s.max}</b><small><span class="choice-category ${catClass}">${categoryLabel(s)}</span>${s.id==='lightning'?`Đánh tối đa ${s.level+1} mục tiêu trong 12 ô; hồi chiêu ${Math.max(3,6-s.level*0.5)} giây.`:s.id==='orbs'?`Bắn ${s.level+1} cầu; tầm 11,4 ô, hồi chiêu ${Math.max(.72,1.65-s.level*0.12).toFixed(2)} giây, nổ lan bán kính 1 ô.`:s.id==='thunderstorm'?`Sét đánh quái gần nhất; vùng ${s.level+1}×${s.level+1} ô, sát thương ${12+(s.level*6)} mỗi quái; hồi chiêu ${Math.max(3,6-s.level*0.6).toFixed(1)} giây.`:s.desc}</small></span>`;b.onclick=()=>{s.apply();s.level++;renderSkillGrid();state='play';$('levelup').classList.add('hidden');updateHUD();last=performance.now();requestAnimationFrame(loop)};box.appendChild(b)}renderSkillGrid()} 
+function renderSkillGrid(){const grid=$('skillGrid');if(!grid)return;grid.innerHTML='';types.forEach((s,i)=>{const el=document.createElement('div');el.className='skill-slot'+(s.support?' support':'')+(s.level>=s.max?' maxed':'');el.title=s.locked?'Ô kỹ năng dự kiến cập nhật sau':s.name+': cấp '+s.level+'/'+s.max;const catClass=s.category||'combat';el.innerHTML=`<span class="slot-icon">${s.emoji}</span><span class="slot-name">${s.name}</span>${!s.locked?`<span class="skill-category ${catClass}">${categoryLabel(s)}</span>`:''}${s.locked?'<span class="slot-empty">Sắp có</span>':s.level?`<span class="slot-level">Lv ${s.level}/${s.max}${s.id==='lightning'?` · ${s.level} tia` :s.id==='orbs'?` · ${s.level} cầu`:s.id==='thunderstorm'?` · ${s.level}×${s.level} ô`:''}</span>`:'<span class="slot-empty">Chưa có</span>'}`;grid.appendChild(el)})}
+function updateHUD(){$('hp').textContent=Math.max(0,Math.ceil(player?.hp??100))+'/'+skill.maxHp;$('lv').textContent=level;$('kills').textContent=kills;$('xp').textContent=xp+'/'+xpNeed;$('xpbar').style.width=(xp/xpNeed*100)+'%';$('time').textContent=fmt(elapsed)}
+function fmt(t){let s=Math.floor(t);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function update(dt){
+ elapsed+=dt;
+ if(elapsed>=1800){elapsed=1800;state='over';$('gameover').classList.remove('hidden');$('result').textContent=`Hoàn thành Stage 30:00! Đạt cấp ${level} và hạ ${kills} quái.`;return}
+ const wave=Math.min(29,Math.floor(elapsed/60));
+ if(wave!==currentWave){currentWave=wave;spawn=0;}
+ const minute=Math.floor(elapsed/60);
+ if(minute>0&&minute%5===0&&lastEventMinute!==minute){
+   lastEventMinute=minute;
+   if(enemies.length<250){if(minute%10===0)spawnEnemy(true);else{const count=Math.min(28,250-enemies.length);for(let i=0;i<count;i++)spawnEnemy(false,i*Math.PI*2/count)}}
+ }
+ spawn-=dt;attackTimer-=dt;
+ if(spawn<=0&&enemies.length<250){const interval=Math.max(.22,1.25-wave*.027);spawn=interval;spawnEnemy();if(wave>=1&&Math.random()<Math.min(.7,wave*.025)&&enemies.length<250)spawnEnemy();}
+ // Reciclar quái quá xa: xóa để giữ ổn định hiệu năng; spawn loop sẽ lấp chỗ trống.
+ const recycleDist=Math.hypot(W,H)*1.5;
+ for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(Math.hypot(e.x-player.x,e.y-player.y)>recycleDist){enemies.splice(i,1)}}
+ // Đọc input theo trạng thái phím đã chuẩn hóa; chuẩn hóa đường chéo để không chạy nhanh hơn.
+ const right=!!(keys.KeyD||keys.ArrowRight||touchDirs.right);
+ const left =!!(keys.KeyA||keys.ArrowLeft ||touchDirs.left);
+ const down =!!(keys.KeyS||keys.ArrowDown ||touchDirs.down);
+ const up   =!!(keys.KeyW||keys.ArrowUp   ||touchDirs.up);
+ let dx=(right?1:0)-(left?1:0),dy=(down?1:0)-(up?1:0),d=Math.hypot(dx,dy)||1;
+ if(player.dash>0)player.dash=Math.max(0,player.dash-dt);
+ const moveSpeed=150*skill.speed*(player.dash>0?2.6:1);
+ player.x+=(dx/d)*moveSpeed*dt;player.y+=(dy/d)*moveSpeed*dt;
+ if(attackTimer<=0){shoot();attackTimer=3/skill.rate}
+ // Thiên lôi Pikachu: kỹ năng riêng có hồi chiêu, không khóa vòng lặp game.
+ const boltSkill=types.find(t=>t.id==='lightning'), boltLv=boltSkill?boltSkill.level:0;
+ lightningTimer=Math.max(0,lightningTimer-dt);
+ if(boltLv>0 && lightningTimer<=0){
+   const radius=12*TILE;
+   const targets=enemies.map(e=>({e,d:Math.hypot(e.x-player.x,e.y-player.y)})).filter(v=>v.d<=radius).sort((a,b)=>a.d-b.d).slice(0,boltLv);
+   if(targets.length){
+     for(const {e} of targets){strikes.push({x:e.x,y:e.y,life:.28,maxLife:.28,seed:Math.random()*1000});e.hp-=skill.power*2.2;e.hit=.2;particles.push({x:e.x,y:e.y,life:.25,color:'#ffe95c',r:24});}
+     for(let i=enemies.length-1;i>=0;i--)if(enemies[i].hp<=0){const e=enemies[i];kills++;gems.push({x:e.x,y:e.y,value:1,emoji:'💎'});if(Math.random()<.16)gems.push({x:e.x+8,y:e.y-5,value:1,emoji:'💎'});enemies.splice(i,1)}
+     lightningTimer=Math.max(3,6-(boltLv-1)*.5);
+   }else lightningTimer=.2;
+ }
+ // Thunderbolt: giáng xuống quái gần nhất; vùng vuông tăng 1×1 đến 6×6 ô.
+ const stormSkill=types.find(t=>t.id==='thunderstorm'), stormLv=stormSkill?stormSkill.level:0;
+ if(stormLv>0){
+   thunderstormTimer-=dt;
+   if(thunderstormTimer<=0){
+     let target=null,nearest=Infinity;
+     for(const e of enemies){const d=Math.hypot(e.x-player.x,e.y-player.y);if(d<nearest){nearest=d;target=e;}}
+     if(target){
+       const size=stormLv*TILE, half=size/2;
+       const damage=skill.power*(12+(stormLv-1)*6); // Lv1=12, Lv6=42 sát thương mỗi quái
+       strikes.push({x:target.x,y:target.y,life:.42,maxLife:.42,aoe:true,size,seed:Math.random()*1000});
+       for(const e of enemies){
+         if(Math.abs(e.x-target.x)<=half+e.r*.25 && Math.abs(e.y-target.y)<=half+e.r*.25){
+           e.hp-=damage;e.hit=.2;
+           particles.push({x:e.x,y:e.y,life:.16,color:'#fff3a1',r:5});
+         }
+       }
+       for(let i=enemies.length-1;i>=0;i--)if(enemies[i].hp<=0){
+         const e=enemies[i];kills++;gems.push({x:e.x,y:e.y,value:1,emoji:'💎'});
+         if(Math.random()<.16)gems.push({x:e.x+8,y:e.y-5,value:1,emoji:'💎'});
+         enemies.splice(i,1);
+       }
+       thunderstormTimer=Math.max(3,6-(stormLv-1)*0.6); // Lv1=6s, Lv6=3s
+     }else thunderstormTimer=.2;
+   }
+ }else thunderstormTimer=0;
+ // Cầu năng lượng là kỹ năng chiến đấu riêng: chỉ bắn sau khi người chơi chọn mở khóa.
+ const orbSkill=types.find(t=>t.id==='orbs'), orbLv=orbSkill?orbSkill.level:0;
+ orbTimer-=dt;
+ if(orbLv>0&&orbTimer<=0){
+   const target=visibleTarget();
+   if(target){
+     const base=Math.atan2(target.y-player.y,target.x-player.x), count=orbLv;
+     const colors=['#ff3434','#ff9d22','#ffe83d','#48e66b','#35d9ff','#bd65ff'];
+     const spread=count===1?0:0.22;
+     for(let k=0;k<count;k++){
+       const offset=(k-(count-1)/2)*spread, angle=base+offset, speed=300;
+       shots.push({x:player.x,y:player.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:1.45,maxLife:1.45,damage:skill.power*(1+orbLv*0.35),elemental:true,color:colors[k],travelled:0,maxDistance:435,seed:Math.random()*1000});
+     }
+     orbTimer=Math.max(0.72,1.65-(orbLv-1)*0.12);
+   }else orbTimer=0.15;
+ }
+ for(const e of enemies){let vx=player.x-e.x,vy=player.y-e.y,dist=Math.hypot(vx,vy)||1;e.x+=vx/dist*e.speed*dt;e.y+=vy/dist*e.speed*dt;if(dist<e.r+13&&player.inv<=0){player.hp-=9;player.inv=.65;particles.push({x:player.x,y:player.y,life:.25,color:'#ff6868',r:18});if(player.hp<=0){gameOver();return}}}
+ player.inv=Math.max(0,player.inv-dt);
+ for(let i=shots.length-1;i>=0;i--){let s=shots[i];s.life-=dt;const step=Math.hypot(s.vx*dt,s.vy*dt);s.x+=s.vx*dt;s.y+=s.vy*dt;s.travelled=(s.travelled||0)+step;let hit=false;for(let j=enemies.length-1;j>=0;j--){let e=enemies[j];if(Math.hypot(s.x-e.x,s.y-e.y)<e.r+10){e.hp-=s.damage;hit=true;particles.push({x:e.x,y:e.y,life:.2,color:'#fff16a',r:15});if(s.elemental){for(const other of enemies){if(other!==e&&Math.hypot(other.x-e.x,other.y-e.y)<=TILE){other.hp-=s.damage*.45;particles.push({x:other.x,y:other.y,life:.18,color:s.color||'#7ef9ff',r:12})}}}break}}if(hit||s.life<=0||s.travelled>=(s.maxDistance||900)||Math.hypot(s.x-player.x,s.y-player.y)>900)shots.splice(i,1)}
+ // Dọn tất cả quái chết do đạn chính hoặc sát thương lan, tránh trạng thái HP âm nhưng vẫn tồn tại.
+ for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];if(e.hp<=0){kills++;gems.push({x:e.x,y:e.y,value:1,emoji:'💎'});if(Math.random()<.16)gems.push({x:e.x+8,y:e.y-5,value:1,emoji:'💎'});enemies.splice(j,1)}}
+ if(skill.orb){for(let k=0;k<skill.orb;k++){let a=elapsed*2.3+k*Math.PI*2/skill.orb;let ox=player.x+Math.cos(a)*46,oy=player.y+Math.sin(a)*46;for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];if(Math.hypot(ox-e.x,oy-e.y)<e.r+8)e.hp-=dt*2.6;}}}
+ for(let i=gems.length-1;i>=0;i--){let g=gems[i],dist=Math.hypot(player.x-g.x,player.y-g.y);if(dist<90*skill.magnet){g.x+=(player.x-g.x)*Math.min(1,dt*3.8*skill.magnet);g.y+=(player.y-g.y)*Math.min(1,dt*3.8*skill.magnet)}if(dist<19){gain(g.value);gems.splice(i,1);if(state==='level')return}}
+ particles=particles.filter(p=>(p.life-=dt)>0);strikes=strikes.filter(v=>(v.life-=dt)>0);updateHUD()
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#24523b';ctx.fillRect(0,0,W,H);
+ // Infinite scrolling world: the camera follows the player; tiles are generated from world coordinates.
+ const camX=player?player.x-W/2:0, camY=player?player.y-H/2:0;
+ function hashTile(tx,ty){let n=Math.imul(tx|0,374761393)+Math.imul(ty|0,668265263)+WORLD_SEED;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295}
+ const sx=Math.floor(camX/TILE)-1, sy=Math.floor(camY/TILE)-1;
+ for(let ty=sy;ty<=Math.floor((camY+H)/TILE)+1;ty++)for(let tx=sx;tx<=Math.floor((camX+W)/TILE)+1;tx++){
+   const r=hashTile(tx,ty), px=tx*TILE-camX, py=ty*TILE-camY;
+   ctx.fillStyle=r<.22?'#2b5b40':r<.58?'#28563b':'#2a593e';ctx.fillRect(px,py,TILE-2,TILE-2);
+   if(r>.73){ctx.fillStyle='#46784a';ctx.fillRect(px+8,py+11,3,3);ctx.fillRect(px+25,py+25,2,2)}
+   if(r>.91){ctx.fillStyle='#5e4930';ctx.fillRect(px+15,py+22,10,9);ctx.fillStyle='#347849';ctx.beginPath();ctx.arc(px+20,py+18,13,0,Math.PI*2);ctx.fill();ctx.fillStyle='#4e9a55';ctx.beginPath();ctx.arc(px+16,py+13,8,0,Math.PI*2);ctx.fill()}
+ }
+ for(const g of gems){ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText(g.emoji,g.x-camX,g.y-camY+6)}
+ for(const v of strikes){const px=v.x-camX,py=v.y-camY,alpha=Math.min(1,v.life/.08);if(v.aoe){/* Thunderbolt chỉ hiển thị tia sét và chớp va chạm nhỏ; không vẽ vùng xanh */ctx.save();ctx.globalAlpha=alpha;ctx.lineCap='round';ctx.shadowColor='#ffe94d';ctx.shadowBlur=20;ctx.strokeStyle='#fff56b';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(px-3,py-105);ctx.lineTo(px+5,py-76);ctx.lineTo(px-5,py-43);ctx.lineTo(px,py+2);ctx.stroke();ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.stroke();ctx.restore();continue}ctx.save();ctx.globalAlpha=alpha;ctx.lineCap='round';ctx.shadowColor='#ffe94d';ctx.shadowBlur=28;ctx.strokeStyle='#fff56b';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(px-5,py-145);ctx.lineTo(px+4,py-112);ctx.lineTo(px-7,py-83);ctx.lineTo(px+5,py-48);ctx.lineTo(px,py+4);ctx.stroke();ctx.strokeStyle='#ffffff';ctx.lineWidth=5;ctx.shadowBlur=12;ctx.stroke();ctx.fillStyle='#fff9a8';ctx.beginPath();ctx.arc(px,py,22*(v.life/v.maxLife),0,Math.PI*2);ctx.fill();ctx.restore()}
+ for(const s of shots){if(s.elemental){const px=s.x-camX,py=s.y-camY;ctx.save();ctx.globalAlpha=Math.min(1,s.life*2);ctx.shadowColor=s.color;ctx.shadowBlur=22;ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.stroke();ctx.restore()}else if(s.lightning){const px=s.x-camX,py=s.y-camY;ctx.save();ctx.translate(px,py);ctx.rotate(Math.atan2(s.vy,s.vx));ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowColor=s.skillShot?'#ff7b00':'#ffe600';ctx.shadowBlur=s.skillShot?25:16;ctx.strokeStyle=s.skillShot?'#ff8a00':'#ffbf00';ctx.lineWidth=s.skillShot?11:8;ctx.beginPath();ctx.moveTo(-17,0);ctx.lineTo(-6,-5);ctx.lineTo(0,4);ctx.lineTo(7,-7);ctx.lineTo(17,0);ctx.stroke();ctx.shadowBlur=12;ctx.strokeStyle=s.skillShot?'#ffd45c':'#fff56b';ctx.lineWidth=s.skillShot?6:4;ctx.stroke();ctx.shadowBlur=3;ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();ctx.restore()}else{ctx.font='19px sans-serif';ctx.textAlign='center';ctx.fillText(s.emoji,s.x-camX,s.y-camY+6)}}
+ for(const e of enemies){ctx.font=`${e.r*2}px sans-serif`;ctx.textAlign='center';ctx.fillText(e.emoji,e.x-camX,e.y-camY+e.r*.38);ctx.fillStyle='#17211a';ctx.fillRect(e.x-camX-e.r,e.y-camY-e.r-8,e.r*2,4);ctx.fillStyle='#f26c69';ctx.fillRect(e.x-camX-e.r,e.y-camY-e.r-8,e.r*2*Math.max(0,e.hp/e.max),4)}
+ if(player){if(player.inv<=0||Math.floor(elapsed*16)%2===0){ctx.font='34px sans-serif';ctx.textAlign='center';ctx.fillText('⚡',player.x-camX,player.y-camY+11);ctx.fillStyle='#0b211b88';ctx.beginPath();ctx.ellipse(player.x-camX,player.y-camY+12,15,6,0,0,Math.PI*2);ctx.fill()}if(skill.orb){for(let k=0;k<skill.orb;k++){let a=elapsed*2.3+k*Math.PI*2/skill.orb;ctx.font='21px sans-serif';ctx.fillText('🔥',player.x-camX+Math.cos(a)*46,player.y-camY+Math.sin(a)*46+7)}}}
+ for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/.25);ctx.strokeStyle=p.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x-camX,p.y-camY,p.r*(1-p.life/.25)+3,0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
+}
+function loop(now){if(state!=='play')return;let dt=Math.min(.035,(now-last)/1000||0);last=now;update(dt);draw();if(state==='play')requestAnimationFrame(loop)}
+function gameOver(){state='over';$('gameover').classList.remove('hidden');$('result').textContent=`Bạn sống sót ${fmt(elapsed)}, đạt cấp ${level} và hạ ${kills} quái.`}
+$('startBtn').onclick=start;$('restart').onclick=start;
+// Keyboard input: chỉ dùng e.code cho WASD, không phụ thuộc ký tự/layout bàn phím.
+const movementCodes=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
+function clearMovementKeys(){keys={};}
+window.addEventListener('keydown',e=>{
+  if(movementCodes.has(e.code)||e.code==='Space') e.preventDefault();
+  if(movementCodes.has(e.code)) keys[e.code]=true;
+  if(e.code==='Space'&&state==='play'&&player&&player.dash<=0) player.dash=.22;
+},{passive:false});
+window.addEventListener('keyup',e=>{
+  if(movementCodes.has(e.code)) keys[e.code]=false;
+  if(e.code==='Space') e.preventDefault();
+},{passive:false});
+// Xóa trạng thái phím khi game mất focus để tránh kẹt phím.
+window.addEventListener('blur',clearMovementKeys);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) clearMovementKeys();
+  last=performance.now();
+});
+// Khi người chơi quay lại tương tác với game, bỏ trạng thái phím cũ trước đó.
+document.addEventListener('pointerdown',()=>{ if(state==='play') clearMovementKeys(); },true);
+document.querySelectorAll('[data-dir]').forEach(b=>{let dir=b.dataset.dir;const on=e=>{e.preventDefault();touchDirs[dir]=true;if(b.setPointerCapture&&e.pointerId!==undefined)b.setPointerCapture(e.pointerId)},off=e=>{e.preventDefault();touchDirs[dir]=false};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)});
+$('dash').addEventListener('pointerdown',e=>{e.preventDefault();if(state==='play'&&player.dash<=0)player.dash=.22});
+reset();renderSkillGrid();draw();
+})();
+</script></body></html>
